@@ -208,3 +208,23 @@ async def process_digital_twin(message: Message, state: FSMContext):
 @router.message(F.text)
 async def handle_free_text_expense(message: Message):
     await process_expense_text(message)
+
+
+# =========================================================
+# ВСТАВИТЬ В САМЫЙ КОНЕЦ ФАЙЛА HANDLERS.PY
+# =========================================================
+
+# Перехватывает нажатия на Inline-кнопки (гасит "часики", бот не зависает)
+@router.callback_query()
+async def fallback_callback(callback: CallbackQuery):
+    await callback.answer("Кнопка обработана!", show_alert=False)
+
+
+@router.message()
+async def fallback_message(message: Message, state: FSMContext):
+    current_state = await state.get_state()
+    # Если пользователь просто написал сообщение (например "Обед 500") — пробуем записать как трату
+    if current_state is None and message.text and not message.text.startswith("/"):
+        await process_expense_text(message)
+    else:
+        await message.answer("Воспользуйтесь кнопками меню или введите /start", reply_markup=main_kb)
